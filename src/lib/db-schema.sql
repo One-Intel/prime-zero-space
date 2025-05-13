@@ -112,8 +112,15 @@ ALTER TABLE system_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audio_presets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
--- Create policies for development (open access)
+-- Remove all existing policies on users table (if any)
+DROP POLICY IF EXISTS "Allow full access to all tables" ON users;
+-- You may need to drop other policies if they exist, e.g.:
+-- DROP POLICY IF EXISTS some_other_policy ON users;
+
+-- Re-create open access policy
 CREATE POLICY "Allow full access to all tables" ON users FOR ALL USING (true);
+
+-- Create policies for development (open access)
 CREATE POLICY "Allow full access to all tables" ON alerts FOR ALL USING (true);
 CREATE POLICY "Allow full access to all tables" ON schedules FOR ALL USING (true);
 CREATE POLICY "Allow full access to all tables" ON announcements FOR ALL USING (true);

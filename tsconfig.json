@@ -17,7 +17,8 @@
     "strict": false,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "strictNullChecks": true
   },
   "include": ["src"],
   "exclude": ["src/tempobook"],
