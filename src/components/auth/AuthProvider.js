@@ -1,5 +1,5 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 const AuthContext = createContext(undefined);
 export function AuthProvider({ children }) {
     const [session, setSession] = useState(null);
