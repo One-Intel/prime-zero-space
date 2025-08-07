@@ -1,9 +1,7 @@
-
 import path from "path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { tempo } from "tempo-devtools/dist/vite";
-import { componentTagger } from "lovable-tagger";
 
 const conditionalPlugins: [string, Record<string, any>][] = [];
 
@@ -13,7 +11,7 @@ if (process.env.TEMPO === "true") {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(async ({ mode }) => ({
   base: process.env.NODE_ENV === "development" ? "/" : process.env.VITE_BASE_PATH || "/",
   optimizeDeps: {
     entries: ["src/main.tsx", "src/tempobook/**/*"],
@@ -23,7 +21,15 @@ export default defineConfig(({ mode }) => ({
       plugins: conditionalPlugins,
     }),
     tempo(),
-    mode === 'development' && componentTagger(),
+    // Conditionally load lovable-tagger only in development
+    mode === 'development' && await (async () => {
+      try {
+        const { componentTagger } = await import("lovable-tagger");
+        return componentTagger();
+      } catch {
+        return null;
+      }
+    })(),
   ].filter(Boolean),
   resolve: {
     preserveSymlinks: true,
