@@ -17,9 +17,9 @@ const Settings = lazy(() => import("./pages/Settings"));
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <OrganizationProvider>
+    <AuthProvider>
+      <OrganizationProvider>
+        <ThemeProvider>
           <Suspense
             fallback={
               <div className="flex h-screen w-screen items-center justify-center">
@@ -92,9 +92,9 @@ function App() {
               </Routes>
             </>
           </Suspense>
-        </OrganizationProvider>
-      </AuthProvider>
-    </ThemeProvider>
+        </ThemeProvider>
+      </OrganizationProvider>
+    </AuthProvider>
   );
 }
 
