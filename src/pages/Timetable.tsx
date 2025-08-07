@@ -3,7 +3,8 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Power, Clock, Calendar } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Plus, Edit, Trash2, Save, X, Power, Clock } from "lucide-react";
 import { TimetableTemplateDialog } from "@/components/timetable/TimetableTemplateDialog";
 import { ScheduleEventDialog } from "@/components/timetable/ScheduleEventDialog";
 import {
@@ -15,13 +16,7 @@ import {
   createScheduleItem,
   updateScheduleItem,
   deleteScheduleItem,
-} from "@/lib/api";React, { useState, useEffect } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Plus, Edit, Trash2, Save, X, Power, Clock, Calendar } from "lucide-react";
+} from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -55,22 +50,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface ScheduleItem {
+interface ScheduleEvent {
   id: string;
   title: string;
-  time: string;
-  location: string;
+  description?: string;
   type: "announcement" | "bell" | "activity";
+  time: string;
+  location?: string;
   audioPreset?: number;
-  repeat_pattern?: string[];
 }
 
 interface WeeklySchedule {
-  id: string;
-  template_id: string;
-  day_of_week: number;
-  is_active: boolean;
-  schedule_items: ScheduleItem[];
+  day: number;
+  events: ScheduleEvent[];
 }
 
 interface TimetableTemplate {
@@ -78,6 +70,7 @@ interface TimetableTemplate {
   name: string;
   description?: string;
   is_active: boolean;
+  schedule: WeeklySchedule[];
 }
 
 const DAYS_OF_WEEK = [
@@ -90,23 +83,25 @@ const DAYS_OF_WEEK = [
   "Saturday",
 ];
 
-export function Timetable() {
+interface TimetableProps {}
+
+export function Timetable({}: TimetableProps): JSX.Element {
   const [templates, setTemplates] = useState<TimetableTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>();
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule[]>([]);
   const [activeDay, setActiveDay] = useState<number>(new Date().getDay());
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<ScheduleItem | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [editingTemplate, setEditingTemplate] = useState<TimetableTemplate | null>(null);
   
   useEffect(() => {
-    fetchTemplates();
+    void fetchTemplates();
   }, []);
 
   useEffect(() => {
     if (selectedTemplate) {
-      fetchWeeklySchedule(selectedTemplate);
+      void fetchWeeklySchedule(selectedTemplate);
     }
   }, [selectedTemplate]);
 
@@ -131,62 +126,62 @@ export function Timetable() {
       console.error("Error fetching weekly schedule:", error);
     }
   };
-  }, []);
 
-  const [events, setEvents] = useState<Event[]>([
+  const [events, setEvents] = useState<ScheduleEvent[]>([
     {
       id: "1",
       title: "Morning Announcements",
       time: "08:00",
-      location: "All Classrooms",
+      description: "All Classrooms",
       type: "announcement",
     },
     {
       id: "2",
       title: "Class Change Bell",
       time: "10:30",
-      location: "All Buildings",
+      description: "All Buildings",
       type: "bell",
     },
     {
       id: "3",
       title: "Lunch Period Announcement",
       time: "12:15",
-      location: "Cafeteria",
+      description: "Cafeteria",
       type: "announcement",
     },
     {
       id: "4",
       title: "End of Day Announcements",
       time: "15:00",
-      location: "All Classrooms",
+      description: "All Classrooms",
       type: "announcement",
     },
     {
       id: "5",
       title: "After School Activities",
       time: "16:30",
-      location: "Gymnasium",
+      description: "Gymnasium",
       type: "activity",
     },
   ]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [currentEvent, setCurrentEvent] = useState<ScheduleEvent | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(new Date());
 
   const handleAddEvent = () => {
     setCurrentEvent({
       id: Math.random().toString(36).substr(2, 9),
       title: "",
       time: "",
-      location: "",
+      description: "",
       type: "announcement",
     });
     setIsEditing(false);
     setIsDialogOpen(true);
   };
 
-  const handleEditEvent = (event: Event) => {
+  const handleEditEvent = (event: ScheduleEvent) => {
     setCurrentEvent(event);
     setIsEditing(true);
     setIsDialogOpen(true);
@@ -203,7 +198,7 @@ export function Timetable() {
     }
   };
 
-  const handleSaveEvent = async (event: Event) => {
+  const handleSaveEvent = async (event: ScheduleEvent) => {
     try {
       if (isEditing) {
         setEvents(events.map((e) => (e.id === event.id ? event : e)));

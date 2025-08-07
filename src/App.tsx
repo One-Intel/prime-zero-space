@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useRoutes } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { OrganizationProvider } from "@/components/auth/OrganizationProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
@@ -21,78 +21,78 @@ function App() {
       <AuthProvider>
         <OrganizationProvider>
           <Suspense
-          fallback={
-            <div className="flex h-screen w-screen items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          }
-        >
-          <>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/timetable"
-                element={
-                  <ProtectedRoute>
-                    <Timetable />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/announcements"
-                element={
-                  <ProtectedRoute>
-                    <Announcements />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/devices"
-                element={
-                  <ProtectedRoute>
-                    <DeviceMonitoring />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/users"
-                element={
-                  <ProtectedRoute>
-                    <UserManagement />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/alerts"
-                element={
-                  <ProtectedRoute>
-                    <Alerts />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              {import.meta.env.VITE_TEMPO === "true" && (
-                <Route path="/tempobook/*" />
-              )}
-            </Routes>
-            {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
-          </>
-        </Suspense>
+            fallback={
+              <div className="flex h-screen w-screen items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            }
+          >
+            <>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/timetable"
+                  element={
+                    <ProtectedRoute>
+                      <Timetable />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/announcements"
+                  element={
+                    <ProtectedRoute>
+                      <Announcements />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/devices"
+                  element={
+                    <ProtectedRoute>
+                      <DeviceMonitoring />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/users"
+                  element={
+                    <ProtectedRoute>
+                      <UserManagement />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/alerts"
+                  element={
+                    <ProtectedRoute>
+                      <Alerts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                {import.meta.env.VITE_TEMPO === "true" && (
+                  <Route path="/tempobook/*" />
+                )}
+              </Routes>
+            </>
+          </Suspense>
+        </OrganizationProvider>
       </AuthProvider>
     </ThemeProvider>
   );
