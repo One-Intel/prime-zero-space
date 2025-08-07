@@ -20,7 +20,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      register_organization: {
+        Args: {
+          org_name: string
+          contact_email: string
+          domain?: string
+          primary_color?: string
+          secondary_color?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
