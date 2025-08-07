@@ -78,3 +78,6 @@
     "vite": "^5.2.0"
   }
 }
+"scripts": {
+  "build:dev": "vite build --mode development"
+}
