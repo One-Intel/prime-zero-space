@@ -3,8 +3,25 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Plus, Power, Clock, Calendar } from "lucide-react";
+import { TimetableTemplateDialog } from "@/components/timetable/TimetableTemplateDialog";
+import { ScheduleEventDialog } from "@/components/timetable/ScheduleEventDialog";
+import {
+  getTimetableTemplates,
+  getWeeklySchedule,
+  createTimetableTemplate,
+  createWeeklySchedule,
+  updateWeeklySchedule,
+  createScheduleItem,
+  updateScheduleItem,
+  deleteScheduleItem,
+} from "@/lib/api";React, { useState, useEffect } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Save, X, Power, Clock, Calendar } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +29,22 @@ import {
   DialogTitle,
   DialogFooter,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,31 +55,82 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface Event {
+interface ScheduleItem {
   id: string;
   title: string;
   time: string;
   location: string;
   type: "announcement" | "bell" | "activity";
   audioPreset?: number;
+  repeat_pattern?: string[];
 }
 
+interface WeeklySchedule {
+  id: string;
+  template_id: string;
+  day_of_week: number;
+  is_active: boolean;
+  schedule_items: ScheduleItem[];
+}
+
+interface TimetableTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  is_active: boolean;
+}
+
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 export function Timetable() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [templates, setTemplates] = useState<TimetableTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>();
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule[]>([]);
+  const [activeDay, setActiveDay] = useState<number>(new Date().getDay());
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleItem | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TimetableTemplate | null>(null);
+  
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        // In a real production app, this would be uncommented
-        // const data = await fetchData<Event>('schedules');
-        // if (data.length > 0) {
-        //   setEvents(data);
-        // }
-        console.log("Fetching events from database...");
-      } catch (error) {
-        console.error("Error fetching events:", error);
+    fetchTemplates();
+  }, []);
+
+  useEffect(() => {
+    if (selectedTemplate) {
+      fetchWeeklySchedule(selectedTemplate);
+    }
+  }, [selectedTemplate]);
+
+  const fetchTemplates = async () => {
+    try {
+      const data = await getTimetableTemplates();
+      setTemplates(data);
+      if (data.length > 0) {
+        const activeTemplate = data.find(t => t.is_active);
+        setSelectedTemplate(activeTemplate?.id || data[0].id);
       }
-    };
-    fetchEvents();
+    } catch (error) {
+      console.error("Error fetching templates:", error);
+    }
+  };
+
+  const fetchWeeklySchedule = async (templateId: string) => {
+    try {
+      const data = await getWeeklySchedule(templateId);
+      setWeeklySchedule(data);
+    } catch (error) {
+      console.error("Error fetching weekly schedule:", error);
+    }
+  };
   }, []);
 
   const [events, setEvents] = useState<Event[]>([

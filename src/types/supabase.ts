@@ -9,15 +9,123 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
+      organizations: {
+        Row: {
+          id: string
+          name: string
+          domain: string | null
+          status: 'active' | 'inactive' | 'suspended'
+          subscription_tier: 'basic' | 'premium' | 'enterprise'
+          max_users: number
+          max_devices: number
+          logo_url: string | null
+          primary_color: string
+          secondary_color: string
+          timezone: string
+          contact_email: string
+          contact_phone: string | null
+          address: Json | null
+          settings: Json
+          subscription_ends_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          domain?: string | null
+          status?: 'active' | 'inactive' | 'suspended'
+          subscription_tier?: 'basic' | 'premium' | 'enterprise'
+          max_users?: number
+          max_devices?: number
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          timezone?: string
+          contact_email: string
+          contact_phone?: string | null
+          address?: Json | null
+          settings?: Json
+          subscription_ends_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          domain?: string | null
+          status?: 'active' | 'inactive' | 'suspended'
+          subscription_tier?: 'basic' | 'premium' | 'enterprise'
+          max_users?: number
+          max_devices?: number
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          timezone?: string
+          contact_email?: string
+          contact_phone?: string | null
+          address?: Json | null
+          settings?: Json
+          subscription_ends_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      users: {
+        Row: {
+          id: string
+          organization_id: string
+          name: string
+          email: string
+          role: 'admin' | 'teacher' | 'staff'
+          status: 'active' | 'inactive'
+          last_login: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          name: string
+          email: string
+          role?: 'admin' | 'teacher' | 'staff'
+          status?: 'active' | 'inactive'
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          name?: string
+          email?: string
+          role?: 'admin' | 'teacher' | 'staff'
+          status?: 'active' | 'inactive'
+          last_login?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Functions: {
-      [_ in never]: never
+      set_organization_context: {
+        Args: {
+          org_id: string
+        }
+        Returns: void
+      }
+      get_current_organization_id: {
+        Args: Record<string, never>
+        Returns: string
+      }
     }
     Enums: {
+      user_role: 'admin' | 'teacher' | 'staff'
+      user_status: 'active' | 'inactive'
+      organization_status: 'active' | 'inactive' | 'suspended'
+      subscription_tier: 'basic' | 'premium' | 'enterprise'
+    }
+    Views: {
       [_ in never]: never
     }
     CompositeTypes: {

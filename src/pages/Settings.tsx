@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
   Card,
@@ -35,25 +35,10 @@ import {
   Volume2,
   Wifi,
 } from "lucide-react";
+import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import { OrganizationSettings } from "@/components/settings/OrganizationSettings";
 
 export function Settings() {
-  // Check if dark mode is enabled in localStorage or system preference
-  const prefersDarkMode =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const storedDarkMode = localStorage.getItem("darkMode") === "true";
-  const [darkMode, setDarkMode] = useState(storedDarkMode || prefersDarkMode);
-
-  // Apply dark mode when toggled and save to localStorage
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("darkMode", "true");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("darkMode", "false");
-    }
-  }, [darkMode]);
   const [notifications, setNotifications] = useState(true);
   const [autoUpdate, setAutoUpdate] = useState(true);
   const [timezone, setTimezone] = useState("UTC");
@@ -71,13 +56,23 @@ export function Settings() {
         </div>
 
         <Tabs defaultValue="general">
-          <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-5">
+          <TabsList className="grid w-full md:w-auto md:inline-grid grid-cols-2 md:grid-cols-7">
+            <TabsTrigger value="organization">Organization</TabsTrigger>
+            <TabsTrigger value="theme">Theme</TabsTrigger>
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="audio">Audio</TabsTrigger>
             <TabsTrigger value="network">Network</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="organization" className="mt-6">
+            <OrganizationSettings />
+          </TabsContent>
+
+          <TabsContent value="theme" className="mt-6">
+            <ThemeSettings />
+          </TabsContent>
 
           <TabsContent value="general" className="mt-6">
             <Card>
@@ -89,18 +84,18 @@ export function Settings() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Appearance</h3>
+                  <h3 className="text-lg font-medium">System Preferences</h3>
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label htmlFor="dark-mode">Dark Mode</Label>
+                      <Label htmlFor="notifications">Notifications</Label>
                       <p className="text-sm text-muted-foreground">
-                        Enable dark mode for the interface
+                        Enable system notifications
                       </p>
                     </div>
                     <Switch
-                      id="dark-mode"
-                      checked={darkMode}
-                      onCheckedChange={setDarkMode}
+                      id="notifications"
+                      checked={notifications}
+                      onCheckedChange={setNotifications}
                     />
                   </div>
                 </div>

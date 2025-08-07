@@ -1,7 +1,7 @@
 import { Suspense, lazy } from "react";
-import { useRoutes, Routes, Route } from "react-router-dom";
-import routes from "tempo-routes";
+import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { OrganizationProvider } from "@/components/auth/OrganizationProvider";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
@@ -19,7 +19,8 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Suspense
+        <OrganizationProvider>
+          <Suspense
           fallback={
             <div className="flex h-screen w-screen items-center justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

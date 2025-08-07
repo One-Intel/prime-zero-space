@@ -1,7 +1,42 @@
 -- Database schema for TI-BOT School Management System
 
+-- Organizations table
+CREATE TABLE IF NOT EXISTS organizations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  domain TEXT UNIQUE,
+  status TEXT NOT NULL CHECK (status IN ('active', 'inactive', 'suspended')),
+  subscription_tier TEXT NOT NULL CHECK (subscription_tier IN ('basic', 'premium', 'enterprise')),
+  max_users INTEGER NOT NULL DEFAULT 10,
+  max_devices INTEGER NOT NULL DEFAULT 5,
+  logo_url TEXT,
+  primary_color TEXT DEFAULT '#1a73e8',
+  secondary_color TEXT DEFAULT '#4285f4',
+  timezone TEXT NOT NULL DEFAULT 'UTC',
+  contact_email TEXT NOT NULL,
+  contact_phone TEXT,
+  address JSONB,
+  settings JSONB DEFAULT '{}',
+  subscription_ends_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Organization audit log
+CREATE TABLE IF NOT EXISTS organization_audit_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  action TEXT NOT NULL,
+  actor_id UUID REFERENCES users(id),
+  changes JSONB,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
+  organization_id UUID NOT NULL REFERENCES organizations(id),
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
@@ -15,6 +50,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Alerts table
 CREATE TABLE IF NOT EXISTS alerts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   severity TEXT NOT NULL CHECK (severity IN ('low', 'medium', 'high')),
@@ -25,7 +61,44 @@ CREATE TABLE IF NOT EXISTS alerts (
   created_by UUID REFERENCES users(id)
 );
 
--- Schedules table
+-- Timetable Templates table
+CREATE TABLE IF NOT EXISTS timetable_templates (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  is_active BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_by UUID REFERENCES users(id)
+);
+
+-- Weekly Schedule table
+CREATE TABLE IF NOT EXISTS weekly_schedules (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  template_id UUID REFERENCES timetable_templates(id),
+  day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Schedule Items table (for recurring events)
+CREATE TABLE IF NOT EXISTS schedule_items (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  weekly_schedule_id UUID REFERENCES weekly_schedules(id),
+  title TEXT NOT NULL,
+  time TIME NOT NULL,
+  location TEXT NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('announcement', 'bell', 'activity')),
+  audio_preset INTEGER REFERENCES audio_presets(id),
+  repeat_pattern TEXT[] CHECK (repeat_pattern <@ ARRAY['MON','TUE','WED','THU','FRI','SAT','SUN']),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_by UUID REFERENCES users(id)
+);
+
+-- One-off Schedules table (for non-recurring events)
 CREATE TABLE IF NOT EXISTS schedules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title TEXT NOT NULL,
@@ -33,7 +106,7 @@ CREATE TABLE IF NOT EXISTS schedules (
   time TIME NOT NULL,
   location TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('announcement', 'bell', 'activity')),
-  audio_preset INTEGER,
+  audio_preset INTEGER REFERENCES audio_presets(id),
   status TEXT NOT NULL CHECK (status IN ('upcoming', 'current', 'completed')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -57,6 +130,7 @@ CREATE TABLE IF NOT EXISTS announcements (
 -- Device status table
 CREATE TABLE IF NOT EXISTS device_status (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  organization_id UUID NOT NULL REFERENCES organizations(id),
   battery INTEGER NOT NULL,
   connectivity TEXT NOT NULL,
   temperature NUMERIC NOT NULL,
@@ -88,7 +162,65 @@ CREATE TABLE IF NOT EXISTS audio_presets (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
   file_path TEXT NOT NULL,
+  volume INTEGER CHECK (volume BETWEEN 0 AND 100) DEFAULT 70,
+  duration INTEGER, -- Duration in seconds
+  fade_in BOOLEAN DEFAULT false,
+  fade_out BOOLEAN DEFAULT false,
+  repeat_count INTEGER DEFAULT 1,
   description TEXT,
+  tags TEXT[],
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Bell patterns table
+CREATE TABLE IF NOT EXISTS bell_patterns (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  pattern_type TEXT NOT NULL CHECK (pattern_type IN ('single', 'sequence', 'custom')),
+  sequence INTEGER[], -- Array of audio preset IDs in sequence
+  interval_seconds INTEGER[], -- Intervals between sounds in sequence
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Schedule exceptions table
+CREATE TABLE IF NOT EXISTS schedule_exceptions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  template_id UUID REFERENCES timetable_templates(id),
+  name TEXT NOT NULL,
+  description TEXT,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  exception_type TEXT NOT NULL CHECK (exception_type IN ('holiday', 'special_schedule', 'cancellation')),
+  replacement_schedule_id UUID REFERENCES weekly_schedules(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  created_by UUID REFERENCES users(id)
+);
+
+-- Schedule event conditions table
+CREATE TABLE IF NOT EXISTS schedule_conditions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  schedule_item_id UUID REFERENCES schedule_items(id),
+  condition_type TEXT NOT NULL CHECK (condition_type IN ('weather', 'temperature', 'attendance', 'custom')),
+  operator TEXT NOT NULL CHECK (operator IN ('equals', 'not_equals', 'greater_than', 'less_than', 'between')),
+  value JSONB NOT NULL,
+  action TEXT NOT NULL CHECK (action IN ('skip', 'delay', 'alternate', 'notify')),
+  action_params JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Bell zones table for different building areas
+CREATE TABLE IF NOT EXISTS bell_zones (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  description TEXT,
+  location_tags TEXT[],
+  volume_adjustment INTEGER CHECK (volume_adjustment BETWEEN -50 AND 50) DEFAULT 0,
+  delay_seconds INTEGER DEFAULT 0,
+  active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -112,23 +244,44 @@ ALTER TABLE system_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audio_presets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
--- Remove all existing policies on users table (if any)
-DROP POLICY IF EXISTS "Allow full access to all tables" ON users;
--- You may need to drop other policies if they exist, e.g.:
--- DROP POLICY IF EXISTS some_other_policy ON users;
+-- Remove all existing policies
+DROP POLICY IF EXISTS "Organization based access" ON users;
+DROP POLICY IF EXISTS "Organization based access" ON alerts;
+DROP POLICY IF EXISTS "Organization based access" ON schedules;
+DROP POLICY IF EXISTS "Organization based access" ON announcements;
+DROP POLICY IF EXISTS "Organization based access" ON device_status;
+DROP POLICY IF EXISTS "Organization based access" ON diagnostic_items;
+DROP POLICY IF EXISTS "Organization based access" ON system_logs;
+DROP POLICY IF EXISTS "Organization based access" ON audio_presets;
+DROP POLICY IF EXISTS "Organization based access" ON settings;
 
--- Re-create open access policy
-CREATE POLICY "Allow full access to all tables" ON users FOR ALL USING (true);
+-- Create organization-based policies
+CREATE POLICY "Organization based access" ON users 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
 
--- Create policies for development (open access)
-CREATE POLICY "Allow full access to all tables" ON alerts FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON schedules FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON announcements FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON device_status FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON diagnostic_items FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON system_logs FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON audio_presets FOR ALL USING (true);
-CREATE POLICY "Allow full access to all tables" ON settings FOR ALL USING (true);
+CREATE POLICY "Organization based access" ON alerts 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON schedules 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON announcements 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON device_status 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON diagnostic_items 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON system_logs 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON audio_presets 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
+
+CREATE POLICY "Organization based access" ON settings 
+  FOR ALL USING (organization_id = current_setting('app.current_organization_id')::UUID);
 
 -- Enable realtime for all tables
 ALTER TABLE users REPLICA IDENTITY FULL;

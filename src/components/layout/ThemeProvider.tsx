@@ -1,37 +1,59 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-
-type Theme = "dark" | "light";
+import { ThemeConfig, defaultTheme, applyTheme } from "@/lib/theme";
+import { useOrganization } from "../auth/OrganizationProvider";
 
 type ThemeContextType = {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
+  theme: ThemeConfig;
+  setTheme: (theme: Partial<ThemeConfig>) => void;
+  resetTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Check if dark mode is enabled in localStorage or system preference
-  const prefersDarkMode =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const storedTheme = localStorage.getItem("theme") as Theme | null;
-  const [theme, setTheme] = useState<Theme>(
-    storedTheme || (prefersDarkMode ? "dark" : "light"),
-  );
+  const { organization } = useOrganization();
+  const [theme, setThemeState] = useState<ThemeConfig>(() => {
+    const storedTheme = localStorage.getItem("themeConfig");
+    if (storedTheme) {
+      try {
+        return { ...defaultTheme, ...JSON.parse(storedTheme) };
+      } catch (e) {
+        console.error('Failed to parse stored theme:', e);
+      }
+    }
+    return defaultTheme;
+  });
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
+    if (organization) {
+      // Apply organization theme settings
+      setThemeState(current => ({
+        ...current,
+        primaryColor: organization.primary_color || defaultTheme.primaryColor,
+        secondaryColor: organization.secondary_color || defaultTheme.secondaryColor
+      }));
     }
-    localStorage.setItem("theme", theme);
+  }, [organization]);
+
+  useEffect(() => {
+    applyTheme(theme);
   }, [theme]);
+
+  const setTheme = (newTheme: Partial<ThemeConfig>) => {
+    setThemeState(current => ({
+      ...current,
+      ...newTheme
+    }));
+  };
+
+  const resetTheme = () => {
+    setThemeState(defaultTheme);
+  };
 
   const value = {
     theme,
     setTheme,
+    resetTheme
   };
 
   return (

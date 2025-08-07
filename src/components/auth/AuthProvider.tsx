@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 type AuthContextType = {
   session: Session | null;
   user: User | null;
+  organizationId: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
     // Mock user for development
@@ -96,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = {
     session,
     user,
+    organizationId,
     signIn,
     signOut,
     loading,
