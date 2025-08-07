@@ -4,7 +4,6 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
     "noEmitOnError": false,
 
     "moduleResolution": "bundler",
@@ -14,11 +13,13 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    "strict": false,
+    "strict": true,
     "paths": {
       "@/*": ["./src/*"]
     },
-    "strictNullChecks": true
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
   },
   "include": ["src"],
   "exclude": ["src/tempobook"],
