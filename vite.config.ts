@@ -19,17 +19,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    target: "es2020",
     rollupOptions: {
       onwarn(warning, warn) {
         if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return
         warn(warning)
       }
     }
-  },
-  // Override TypeScript config to avoid conflicts
-  esbuild: {
-    target: "es2020",
-    jsx: "automatic"
   }
 }));
